@@ -2571,7 +2571,19 @@ void QSSGLayerRenderData::prepareForRender()
 
 
             hasScopedLights |= (renderLight->m_scope != nullptr);
-            const bool castShadows = renderLight->m_castShadow && !renderLight->m_fullyBaked;
+            // Shadow maps are 2D array textures and the generated shaders
+            // sample them through sampler2DArray: neither exists on an
+            // OpenGL ES 2.0 RHI (no QRhi::TextureArrays). A light that asks
+            // for shadows there lights the scene without them instead of
+            // producing a texture that cannot be created and shaders that
+            // cannot be compiled.
+            static bool shadowsUnsupportedWarned = false;
+            const bool shadowsSupported = renderer->contextInterface()->rhiContext()->rhi()->isFeatureSupported(QRhi::TextureArrays);
+            if (!shadowsSupported && renderLight->m_castShadow && !shadowsUnsupportedWarned) {
+                qWarning("Shadow maps need texture arrays, which this graphics API level (OpenGL ES 2.0) lacks; lights cast no shadows");
+                shadowsUnsupportedWarned = true;
+            }
+            const bool castShadows = shadowsSupported && renderLight->m_castShadow && !renderLight->m_fullyBaked;
             shadowMapCount += int(castShadows);
             const auto &direction = renderLight->getScalingCorrectDirection(renderLightTransform);
             renderableLights.push_back(QSSGShaderLight{ renderLight, castShadows, direction });
