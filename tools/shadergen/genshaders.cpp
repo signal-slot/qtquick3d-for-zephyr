@@ -120,10 +120,16 @@ bool GenShaders::process(const MaterialParser::SceneData &sceneData,
     QVector<QSSGRenderGraphObject *> nodes;
 
     if (!view3D->camera()) {
+        // A camera the parser did not see (one nested in an animated Node, as
+        // in helloqtquick3d, intro, lights): the stand-in must be part of
+        // the scene too, or prepareForRender() renders no camera at all and
+        // renderedCameras[0] below is out of bounds (a SIGBUS in
+        // getSortedOpaqueRenderableObjects).
         auto camera = new QQuick3DPerspectiveCamera();
         auto node = QQuick3DObjectPrivate::updateSpatialNode(camera, nullptr);
         QQuick3DObjectPrivate::get(camera)->spatialNode = node;
         nodes.append(node);
+        layer.addChild(static_cast<QSSGRenderNode &>(*node));
         view3D->setCamera(camera);
     }
 
@@ -224,6 +230,10 @@ bool GenShaders::process(const MaterialParser::SceneData &sceneData,
 
         const auto &propertyTable = layerData.getDefaultMaterialPropertyTable();
 
+        if (layerData.renderedCameras.isEmpty()) {
+            qWarning("shadergen: no camera rendered the scene; skipping a model");
+            return;
+        }
         const auto &opaqueObjects = layerData.getSortedOpaqueRenderableObjects(*layerData.renderedCameras[0]);
         const auto &transparentObjects = layerData.getSortedTransparentRenderableObjects(*layerData.renderedCameras[0]);
 
