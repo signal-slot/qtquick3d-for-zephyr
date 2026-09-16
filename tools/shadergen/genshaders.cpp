@@ -46,6 +46,7 @@ static void initBaker(QShaderBaker *baker, QRhi *rhi)
     outputs.append({ QShader::HlslShader, QShaderVersion(60) }); // Shader Model 6.0
     outputs.append({ QShader::MslShader, QShaderVersion(12) }); // Metal 1.2
     outputs.append({ QShader::GlslShader, QShaderVersion(300, QShaderVersion::GlslEs) }); // GLES 3.0+
+    outputs.append({ QShader::GlslShader, QShaderVersion(100, QShaderVersion::GlslEs) }); // GLES 2.0 (what the runtime cache picks on an ES 2.0 context)
     outputs.append({ QShader::GlslShader, QShaderVersion(140) }); // OpenGL 3.1+
 
     baker->setGeneratedShaders(outputs);

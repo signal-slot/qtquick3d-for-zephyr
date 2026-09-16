@@ -7,6 +7,17 @@
 ## Quick3DUtils Module:
 #####################################################################
 
+# xatlas (lightmap UV unwrapping) runs a std::thread pool; on Zephyr the C++
+# runtime is single-threaded and lightmap baking is a host tooling step, so
+# the target build leaves it out (qssglightmapuvgenerator.cpp stubs itself).
+if(ZEPHYR)
+    set(QSSG_XATLAS_SOURCES "")
+    set(QSSG_XATLAS_INCLUDE "")
+else()
+    set(QSSG_XATLAS_SOURCES ../3rdparty/xatlas/xatlas.cpp ../3rdparty/xatlas/xatlas.h)
+    set(QSSG_XATLAS_INCLUDE ../3rdparty/xatlas)
+endif()
+
 qt_internal_add_module(Quick3DUtils
     SOURCES
         qqsbcollection.cpp qqsbcollection_p.h
@@ -25,7 +36,7 @@ qt_internal_add_module(Quick3DUtils
         qtquick3dutilsglobal_p.h
         qquick3dprofiler.cpp
         qquick3dprofiler_p.h
-        ../3rdparty/xatlas/xatlas.cpp ../3rdparty/xatlas/xatlas.h
+        ${QSSG_XATLAS_SOURCES}
         qssglightmapuvgenerator.cpp qssglightmapuvgenerator_p.h
         ../3rdparty/meshoptimizer/src/allocator.cpp
         ../3rdparty/meshoptimizer/src/clusterizer.cpp
@@ -46,7 +57,7 @@ qt_internal_add_module(Quick3DUtils
         ../3rdparty/meshoptimizer/src/partition.cpp
         ../3rdparty/meshoptimizer/src/quantization.cpp
     NO_UNITY_BUILD_SOURCES
-        ../3rdparty/xatlas/xatlas.cpp ../3rdparty/xatlas/xatlas.h
+        ${QSSG_XATLAS_SOURCES}
         ../3rdparty/meshoptimizer/src/allocator.cpp
         ../3rdparty/meshoptimizer/src/clusterizer.cpp
         ../3rdparty/meshoptimizer/src/indexcodec.cpp
@@ -68,7 +79,7 @@ qt_internal_add_module(Quick3DUtils
     DEFINES
         QT_BUILD_QUICK3DUTILS_LIB
     INCLUDE_DIRECTORIES
-        ../3rdparty/xatlas
+        ${QSSG_XATLAS_INCLUDE}
         ../3rdparty/meshoptimizer/src/
     LIBRARIES
         Qt::CorePrivate
@@ -84,13 +95,15 @@ qt_internal_add_module(Quick3DUtils
     SSG_HEADER_FILTERS
         "(^|/)qssg.*[^_][^p]\\.h$"
     ATTRIBUTION_FILE_DIR_PATHS
-        ../3rdparty/xatlas
+        ${QSSG_XATLAS_INCLUDE}
         ../3rdparty/meshoptimizer
 )
 
 # Silence warnings in 3rdparty code
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    set_source_files_properties(../3rdparty/xatlas/xatlas.cpp PROPERTIES COMPILE_FLAGS "-Wno-type-limits")
+    if(NOT ZEPHYR)
+        set_source_files_properties(../3rdparty/xatlas/xatlas.cpp PROPERTIES COMPILE_FLAGS "-Wno-type-limits")
+    endif()
 endif()
 
 #### Keys ignored in scope 1:.:.:utils.pro:<TRUE>:
