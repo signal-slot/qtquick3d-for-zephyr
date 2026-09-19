@@ -431,7 +431,20 @@ QString renderToKTXFileInternal(const char *name, const QString &inPath, const Q
     rub = rhi->nextResourceUpdateBatch();
     const float resolution = environmentMapSize.width();
     const float lodBias = 0.0f;
-    const int sampleCount = 1024;
+    // Importance samples per pixel of the pre-filtered environment map. Each
+    // one is a scattered cube-map fetch, so the cost is 1024 x resolution^2 x 6
+    // faces of mostly cache-missing traffic: on the GPU this port targets (a
+    // BXS-4-64 at 1024x600) that is tens of seconds per face, and the examples
+    // with an environment map spent minutes before their first frame. 64 keeps
+    // the same picture with visible noise only at high roughness, and brings
+    // the bake down to seconds. QT_QUICK3D_IBL_SAMPLES overrides it.
+    const int sampleCount = qEnvironmentVariableIntValue("QT_QUICK3D_IBL_SAMPLES") > 0
+            ? qEnvironmentVariableIntValue("QT_QUICK3D_IBL_SAMPLES")
+#ifdef Q_OS_ZEPHYR
+            : 64;
+#else
+            : 1024;
+#endif
     for (int mipLevel = 0; mipLevel < mipmapCount; ++mipLevel) {
         Q_ASSERT(mipmapCount - 2);
         const float roughness = float(mipLevel) / float(mipmapCount - 2);

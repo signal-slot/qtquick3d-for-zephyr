@@ -938,7 +938,15 @@ bool QSSGBufferManager::createEnvironmentMap(const QSSGLoadedTexture *inImage, Q
     rub = rhi->nextResourceUpdateBatch();
     const float resolution = environmentMapSize.width();
     const float lodBias = 0.0f;
-    const int sampleCount = 1024;
+    // Importance samples per pixel of the pre-filtered environment map. Every
+    // one is a scattered cube-map fetch, so the bake costs sampleCount x
+    // resolution^2 x 6 faces of mostly cache-missing traffic: on a small
+    // embedded GPU that is seconds per face and the first frame arrives
+    // minutes late. QT_QUICK3D_IBL_SAMPLES lowers it (64 keeps the picture,
+    // with visible noise only at high roughness).
+    static const int sampleCount = qEnvironmentVariableIntValue("QT_QUICK3D_IBL_SAMPLES") > 0
+            ? qEnvironmentVariableIntValue("QT_QUICK3D_IBL_SAMPLES")
+            : 1024;
     for (int mipLevel = 0; mipLevel < mipmapCount; ++mipLevel) {
         Q_ASSERT(mipmapCount - 2);
         const float roughness = float(mipLevel) / float(mipmapCount - 2);
