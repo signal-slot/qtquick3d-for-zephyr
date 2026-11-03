@@ -18,7 +18,11 @@
 
 #define TINYEXR_IMPLEMENTATION
 #define TINYEXR_USE_MINIZ 0
+#ifdef Q_OS_ZEPHYR
+#define TINYEXR_USE_THREAD 0   // single-threaded C++ runtime: no std::thread for EXR chunk decoding
+#else
 #define TINYEXR_USE_THREAD 1
+#endif
 #include <zlib.h>
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_CLANG("-Wunused-parameter")

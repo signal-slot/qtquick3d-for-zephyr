@@ -4,10 +4,25 @@
 
 
 #include "qssglightmapuvgenerator_p.h"
+#ifndef Q_OS_ZEPHYR
 #include "xatlas.h"
+#endif
 
 QT_BEGIN_NAMESPACE
 
+#ifdef Q_OS_ZEPHYR
+// Zephyr: no lightmap UV generation on the target. xatlas runs a
+// std::thread pool the single-threaded C++ runtime has no support for, and
+// lightmap baking is a tooling step (balsam / the lightmapper on the host),
+// not something a device UI does at run time. An empty result means "no
+// lightmap UVs", which is what a mesh without them gets anyway.
+QSSGLightmapUVGeneratorResult QSSGLightmapUVGenerator::run(const QByteArray &, const QByteArray &,
+                                                           const QByteArray &, const QByteArray &,
+                                                           QSSGMesh::Mesh::ComponentType, float)
+{
+    return QSSGLightmapUVGeneratorResult();
+}
+#else
 QSSGLightmapUVGeneratorResult QSSGLightmapUVGenerator::run(const QByteArray &positions,
                                                            const QByteArray &normals,
                                                            const QByteArray &uv0,
@@ -109,5 +124,6 @@ QSSGLightmapUVGeneratorResult QSSGLightmapUVGenerator::run(const QByteArray &pos
 
     return result;
 }
+#endif // Q_OS_ZEPHYR
 
 QT_END_NAMESPACE
